@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import io
+import os
+import urllib.request
 from PIL import Image, ImageDraw, ImageFont
 
 # -------------------------------------------------------------
@@ -606,42 +608,61 @@ JOBS = {
 }
 
 # -------------------------------------------------------------
-# 5. 이미지 생성 함수 (Pillow)
+# 5. 이미지 생성 함수 (Pillow & 한글 폰트 자동 다운로드)
 # -------------------------------------------------------------
+def get_korean_font(size):
+    font_filename = "NanumGothic.ttf"
+    # Streamlit Cloud 서버에 폰트가 없으면 구글 폰트 레포에서 자동 다운로드
+    if not os.path.exists(font_filename):
+        font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+        try:
+            urllib.request.urlretrieve(font_url, font_filename)
+        except Exception:
+            pass
+
+    # 다운받은 폰트 파일 열기
+    try:
+        return ImageFont.truetype(font_filename, size)
+    except Exception:
+        # 윈도우/맥 기본 폰트 시도
+        for local_font in ["malgun.ttf", "AppleGothic.ttf"]:
+            try:
+                return ImageFont.truetype(local_font, size)
+            except Exception:
+                continue
+        return ImageFont.load_default()
+
 def generate_result_image(job_info, user_code, match_score, f_pct, b_pct, a_pct, d_pct, c_pct, r_pct, m_pct, s_pct):
     width, height = 700, 880
     image = Image.new("RGB", (width, height), color="#F6F7F9")
     draw = ImageDraw.Draw(image)
 
-    def load_font(size):
-        for font_name in ["malgun.ttf", "AppleGothic.ttf", "NanumGothic.ttf"]:
-            try:
-                return ImageFont.truetype(font_name, size)
-            except:
-                pass
-        return ImageFont.load_default()
+    font_title = get_korean_font(28)
+    font_sub = get_korean_font(18)
+    font_body = get_korean_font(15)
+    font_small = get_korean_font(13)
 
-    font_title = load_font(30)
-    font_sub = load_font(20)
-    font_body = load_font(16)
-    font_small = load_font(14)
+    accent_color = job_info.get("char_color", "#243B5A")
 
     # 1. 상단 카드
     draw.rounded_rectangle([30, 30, 670, 310], radius=18, fill="#FFFFFF", outline="#E4E7EC", width=2)
-    accent_color = job_info.get("char_color", "#243B5A")
     draw.rounded_rectangle([30, 30, 670, 42], radius=6, fill=accent_color)
 
     draw.text((350, 75), "MY TRADE PERSONA", font=font_small, fill="#667085", anchor="mm")
-    draw.text((350, 125), job_info["char_name"], font=font_title, fill="#172033", anchor="mm")
-    draw.text((350, 175), job_info["title"], font=font_sub, fill=accent_color, anchor="mm")
+    draw.text((350, 125), str(job_info["char_name"]), font=font_title, fill="#172033", anchor="mm")
+    draw.text((350, 175), str(job_info["title"]), font=font_sub, fill=accent_color, anchor="mm")
     draw.text((350, 225), f"성향 코드: {user_code}   |   매칭률: {match_score}%", font=font_body, fill="#475467", anchor="mm")
-    draw.text((350, 265), f"\"{job_info['summary']}\"", font=font_small, fill="#667085", anchor="mm")
+    
+    summary_text = f"\"{job_info['summary']}\""
+    if len(summary_text) > 42:
+        summary_text = summary_text[:40] + "...\""
+    draw.text((350, 265), summary_text, font=font_small, fill="#667085", anchor="mm")
 
     # 2. DNA 카드
     draw.rounded_rectangle([30, 330, 670, 420], radius=12, fill="#FFFFFF", outline="#E4E7EC", width=1)
-    draw.rectangle([30, 330, 36, 420], fill=accent_color)
-    draw.text((50, 350), "MY TRADE DNA", font=font_small, fill="#667085")
-    draw.text((50, 375), job_info["traits"], font=font_body, fill="#172033")
+    draw.rectangle([30, 330, 38, 420], fill=accent_color)
+    draw.text((50, 348), "MY TRADE DNA", font=font_small, fill="#667085")
+    draw.text((50, 375), str(job_info["traits"]), font=font_body, fill="#172033")
 
     # 3. 4대 축 분석 카드
     draw.rounded_rectangle([30, 440, 670, 840], radius=18, fill="#FFFFFF", outline="#E4E7EC", width=2)
@@ -660,14 +681,14 @@ def generate_result_image(job_info, user_code, match_score, f_pct, b_pct, a_pct,
 
         bar_y = y + 25
         draw.rounded_rectangle([50, bar_y, 650, bar_y + 12], radius=6, fill="#EAECF0")
-        split_x = 50 + int((left_v / 100) * 600)
+        split_x = 50 + int((left_v / 100.0) * 600)
         if split_x > 50:
             draw.rounded_rectangle([50, bar_y, split_x, bar_y + 12], radius=6, fill="#5A7394")
         if split_x < 650:
             draw.rounded_rectangle([split_x, bar_y, 650, bar_y + 12], radius=6, fill="#B8C6D6")
 
     buf = io.BytesIO()
-    image.save(buf, format="PNG")
+    image.save(buf, format="PNG", optimize=True)
     buf.seek(0)
     return buf.getvalue()
 
@@ -942,7 +963,7 @@ elif st.session_state.current_idx == 25:
     st.download_button(
         label="🖼️ 결과지 이미지로 저장",
         data=img_bytes,
-        file_name=f"무역직무_MBTI_{best_job['char_name']}.png",
+        file_name=f"trade_mbti_{best_job_code}.png",
         mime="image/png",
         use_container_width=True
     )
