@@ -17,8 +17,36 @@ if "in_val_2" not in st.session_state:
 
 st.markdown("""
 <style>
+    /* 기본 (라이트 모드) CSS 변수 */
+    :root {
+        --app-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --accent-color: #2563eb;
+        --accent-bg: #eff6ff;
+        --result-bg: #ffffff;
+        --btn-hover-border: #2563eb;
+    }
+
+    /* 다크 모드 자동 감지 CSS 변수 */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --app-bg: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-bg: #1e3a8a;
+            --result-bg: #1e293b;
+            --btn-hover-border: #60a5fa;
+        }
+    }
+
     .stApp {
-        background-color: #f1f5f9;
+        background-color: var(--app-bg);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     .block-container {
@@ -29,33 +57,33 @@ st.markdown("""
 
     /* 상단 요약 카드 */
     .rate-summary-badge {
-        background: #ffffff;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 14px 16px;
-        border: 1px solid #cbd5e1;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        border: 1px solid var(--card-border);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         margin-bottom: 8px;
     }
     .rate-country {
         font-size: 0.78rem;
         font-weight: 700;
-        color: #64748b;
+        color: var(--text-secondary);
     }
     .rate-price {
         font-size: 1.45rem;
         font-weight: 800;
-        color: #0f172a;
+        color: var(--text-primary);
         margin-top: 4px;
         word-break: break-all;
     }
 
     /* 결과 디스플레이 박스 */
     .result-hero-box {
-        background: #ffffff;
-        border: 2px solid #2563eb;
+        background: var(--result-bg);
+        border: 2px solid var(--accent-color);
         border-radius: 14px;
         padding: 20px 22px;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -65,48 +93,48 @@ st.markdown("""
     .result-hero-label {
         font-size: 0.85rem;
         font-weight: 700;
-        color: #2563eb;
+        color: var(--accent-color);
     }
     .result-hero-value {
         font-size: 2rem;
         font-weight: 900;
-        color: #0f172a;
+        color: var(--text-primary);
         letter-spacing: -0.02em;
         margin: 4px 0;
         word-break: break-all;
     }
     .result-hero-sub {
         font-size: 0.8rem;
-        color: #64748b;
+        color: var(--text-secondary);
         font-weight: 500;
     }
 
     .preset-header {
         font-size: 0.82rem;
-        color: #334155;
+        color: var(--text-secondary);
         font-weight: 700;
         margin-top: 12px;
         margin-bottom: 6px;
     }
 
-    /* 프리셋 버튼 반응형 처리 */
+    /* 프리셋 버튼 테마 반응형 처리 */
     div.row-widget.stButton > button {
         border-radius: 10px !important;
         font-weight: 600 !important;
         font-size: 0.82rem !important;
-        background-color: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #1e293b !important;
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        color: var(--text-primary) !important;
         padding: 6px 4px !important;
         white-space: nowrap !important;
     }
     div.row-widget.stButton > button:hover {
-        border-color: #2563eb !important;
-        color: #2563eb !important;
-        background-color: #eff6ff !important;
+        border-color: var(--btn-hover-border) !important;
+        color: var(--accent-color) !important;
+        background-color: var(--accent-bg) !important;
     }
 
-    /* 모바일 전용 미디어 쿼리 (화면 폭 768px 이하) */
+    /* 모바일 전용 미디어 쿼리 */
     @media (max-width: 768px) {
         .block-container {
             padding-left: 1rem !important;
@@ -230,7 +258,6 @@ try:
             def set_preset_val_2(amount):
                 st.session_state.in_val_2 = float(amount)
 
-            # 모바일 너비를 고려해 간결하게 축약
             krw_presets = [
                 (50000, "5만 원"),
                 (100000, "10만 원"),
