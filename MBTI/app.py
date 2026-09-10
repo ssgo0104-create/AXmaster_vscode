@@ -1143,3 +1143,4 @@ elif st.session_state.current_idx == 25:
         st.session_state.current_idx = 0
         st.session_state.answers = {}
         st.rerun()
+        
