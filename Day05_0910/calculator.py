@@ -10,7 +10,6 @@ EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")
 
 st.set_page_config(page_title="Global Forex Dashboard", page_icon="💱", layout="wide")
 
-# 세션 상태 기본값 초기화
 if "in_val_1" not in st.session_state:
     st.session_state.in_val_1 = 100.0
 if "in_val_2" not in st.session_state:
@@ -23,80 +22,83 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.5rem;
         padding-bottom: 3rem;
         max-width: 1050px;
     }
 
-    /* 상단 요약 미니 카드 */
+    /* 상단 요약 카드 */
     .rate-summary-badge {
         background: #ffffff;
         border-radius: 12px;
-        padding: 16px 20px;
+        padding: 14px 16px;
         border: 1px solid #cbd5e1;
         box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        margin-bottom: 8px;
     }
     .rate-country {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 700;
         color: #64748b;
-        letter-spacing: -0.02em;
     }
     .rate-price {
-        font-size: 1.55rem;
+        font-size: 1.45rem;
         font-weight: 800;
         color: #0f172a;
         margin-top: 4px;
+        word-break: break-all;
     }
 
-    /* 시인성 극대화 결과 디스플레이 박스 */
+    /* 결과 디스플레이 박스 */
     .result-hero-box {
         background: #ffffff;
         border: 2px solid #2563eb;
         border-radius: 14px;
-        padding: 22px 24px;
+        padding: 20px 22px;
         box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
         height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        margin-top: 6px;
     }
     .result-hero-label {
-        font-size: 0.88rem;
+        font-size: 0.85rem;
         font-weight: 700;
         color: #2563eb;
     }
     .result-hero-value {
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 900;
         color: #0f172a;
-        letter-spacing: -0.03em;
-        margin: 6px 0;
+        letter-spacing: -0.02em;
+        margin: 4px 0;
+        word-break: break-all;
     }
     .result-hero-sub {
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         color: #64748b;
         font-weight: 500;
     }
 
-    /* 상단 가로형 프리셋 선택 바 */
     .preset-header {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         color: #334155;
         font-weight: 700;
-        margin-top: 14px;
+        margin-top: 12px;
         margin-bottom: 6px;
     }
 
-    /* 프리셋 버튼 디자인 */
+    /* 프리셋 버튼 반응형 처리 */
     div.row-widget.stButton > button {
         border-radius: 10px !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        font-size: 0.82rem !important;
         background-color: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         color: #1e293b !important;
-        padding: 6px 0 !important;
+        padding: 6px 4px !important;
+        white-space: nowrap !important;
     }
     div.row-widget.stButton > button:hover {
         border-color: #2563eb !important;
@@ -104,9 +106,22 @@ st.markdown("""
         background-color: #eff6ff !important;
     }
 
-    button[data-baseweb="tab"] {
-        font-size: 1rem !important;
-        font-weight: 700 !important;
+    /* 모바일 전용 미디어 쿼리 (화면 폭 768px 이하) */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        .result-hero-value {
+            font-size: 1.65rem !important;
+        }
+        .rate-price {
+            font-size: 1.25rem !important;
+        }
+        div.row-widget.stButton > button {
+            font-size: 0.75rem !important;
+            padding: 5px 2px !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -131,15 +146,14 @@ try:
 
         update_time = ex_res.get("time_last_update_utc", "")[:16]
 
-        st.markdown(f"**🕒 기준 환율 정보** &nbsp;`{update_time} UTC` &nbsp;·&nbsp; 기준통화: **1 USD**")
+        st.caption(f"🕒 실시간 기준: {update_time} UTC (Base: 1 USD)")
 
-        # 상단 실시간 환율 카드
         col1, col2, col3, col4 = st.columns(4)
         cards = [
-            (col1, "🇰🇷 대한민국 KRW", f"₩ {krw_rate:,.1f}"),
-            (col2, "🇯🇵 일본 JPY", f"¥ {jpy_rate:,.1f}"),
-            (col3, "🇪🇺 유로존 EUR", f"€ {eur_rate:,.2f}"),
-            (col4, "🇨🇳 중국 CNY", f"¥ {cny_rate:,.2f}"),
+            (col1, "🇰🇷 KRW", f"₩ {krw_rate:,.1f}"),
+            (col2, "🇯🇵 JPY", f"¥ {jpy_rate:,.1f}"),
+            (col3, "🇪🇺 EUR", f"€ {eur_rate:,.2f}"),
+            (col4, "🇨🇳 CNY", f"¥ {cny_rate:,.2f}"),
         ]
         for col, title, val in cards:
             with col:
@@ -151,8 +165,6 @@ try:
                 """, unsafe_allow_html=True)
 
         st.write("")
-        st.write("")
-
         st.subheader("🖩 환율 계산기")
 
         currency_map = {
@@ -169,11 +181,10 @@ try:
             "CNY": [100, 500, 1000, 5000],
         }
 
-        tab1, tab2 = st.tabs(["➡️  외화 ➔ 원화(KRW) 계산", "⬅️  원화(KRW) ➔ 외화 계산"])
+        tab1, tab2 = st.tabs(["➡️ 외화 ➔ 원화(KRW)", "⬅️ 원화(KRW) ➔ 외화"])
 
         # 탭 1: 외화 -> 원화
         with tab1:
-            # 1. 최상단 빠른 금액 선택 영역
             def set_preset_val_1(amount):
                 st.session_state.in_val_1 = float(amount)
 
@@ -185,12 +196,8 @@ try:
             p_cols1 = st.columns(4)
             for idx, p_val in enumerate(curr_presets_1):
                 with p_cols1[idx]:
-                    btn_label = f"{curr_code_1} {p_val:,}"
-                    st.button(btn_label, key=f"btn_p1_{curr_code_1}_{idx}", on_click=set_preset_val_1, args=(p_val,), use_container_width=True)
+                    st.button(f"{curr_code_1} {p_val:,}", key=f"btn_p1_{curr_code_1}_{idx}", on_click=set_preset_val_1, args=(p_val,), use_container_width=True)
 
-            st.write("")
-
-            # 2. 본문 입력 및 계산 결과 영역
             c_input, c_rate, c_result = st.columns([1.2, 1.2, 1.4], gap="medium")
 
             with c_input:
@@ -220,15 +227,15 @@ try:
 
         # 탭 2: 원화 -> 외화
         with tab2:
-            # 1. 최상단 빠른 금액 선택 영역
             def set_preset_val_2(amount):
                 st.session_state.in_val_2 = float(amount)
 
+            # 모바일 너비를 고려해 간결하게 축약
             krw_presets = [
-                (50000, "KRW 50,000 (5만)"),
-                (100000, "KRW 100,000 (10만)"),
-                (500000, "KRW 500,000 (50만)"),
-                (1000000, "KRW 1,000,000 (100만)"),
+                (50000, "5만 원"),
+                (100000, "10만 원"),
+                (500000, "50만 원"),
+                (1000000, "100만 원"),
             ]
 
             st.markdown('<div class="preset-header">⚡ 빠른 금액 선택</div>', unsafe_allow_html=True)
@@ -237,9 +244,6 @@ try:
                 with p_cols2[idx]:
                     st.button(p_text, key=f"btn_p2_{idx}", on_click=set_preset_val_2, args=(p_val,), use_container_width=True)
 
-            st.write("")
-
-            # 2. 본문 입력 및 계산 결과 영역
             c_input, c_rate, c_result = st.columns([1.2, 1.2, 1.4], gap="medium")
 
             with c_input:
