@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit.components.v1 as components
+import io
+from PIL import Image, ImageDraw, ImageFont
 
 # -------------------------------------------------------------
 # 1. 페이지 기본 설정
@@ -133,7 +134,7 @@ p, span, div, label {
 }
 
 /* 일반 버튼 기본 스타일 */
-.stButton > button {
+.stButton > button, .stDownloadButton > button {
     border-radius: 12px !important;
     font-weight: 700 !important;
     padding: 13px 18px !important;
@@ -141,22 +142,30 @@ p, span, div, label {
     white-space: normal !important;
     height: auto !important;
     min-height: 48px !important;
-    text-align: left !important;
     line-height: 1.5 !important;
 }
 
-.stButton > button[kind="primary"] {
+.stButton > button[kind="primary"], .stDownloadButton > button {
     background: #243B5A !important;
     color: #FFFFFF !important;
     border: 1px solid #243B5A !important;
     box-shadow: 0 4px 12px rgba(36, 59, 90, 0.16) !important;
     text-align: center !important;
+    width: 100% !important;
+}
+
+.stButton > button[kind="primary"]:hover, .stDownloadButton > button:hover {
+    background: #1C304A !important;
+    border-color: #1C304A !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(36, 59, 90, 0.2) !important;
 }
 
 .stButton > button[kind="secondary"] {
     background: #FFFFFF !important;
     color: #273142 !important;
     border: 1px solid #D5D9E0 !important;
+    text-align: left !important;
 }
 
 .stButton > button[kind="secondary"]:hover {
@@ -597,7 +606,73 @@ JOBS = {
 }
 
 # -------------------------------------------------------------
-# 5. 세션 상태
+# 5. 이미지 생성 함수 (Pillow)
+# -------------------------------------------------------------
+def generate_result_image(job_info, user_code, match_score, f_pct, b_pct, a_pct, d_pct, c_pct, r_pct, m_pct, s_pct):
+    width, height = 700, 880
+    image = Image.new("RGB", (width, height), color="#F6F7F9")
+    draw = ImageDraw.Draw(image)
+
+    def load_font(size):
+        for font_name in ["malgun.ttf", "AppleGothic.ttf", "NanumGothic.ttf"]:
+            try:
+                return ImageFont.truetype(font_name, size)
+            except:
+                pass
+        return ImageFont.load_default()
+
+    font_title = load_font(30)
+    font_sub = load_font(20)
+    font_body = load_font(16)
+    font_small = load_font(14)
+
+    # 1. 상단 카드
+    draw.rounded_rectangle([30, 30, 670, 310], radius=18, fill="#FFFFFF", outline="#E4E7EC", width=2)
+    accent_color = job_info.get("char_color", "#243B5A")
+    draw.rounded_rectangle([30, 30, 670, 42], radius=6, fill=accent_color)
+
+    draw.text((350, 75), "MY TRADE PERSONA", font=font_small, fill="#667085", anchor="mm")
+    draw.text((350, 125), job_info["char_name"], font=font_title, fill="#172033", anchor="mm")
+    draw.text((350, 175), job_info["title"], font=font_sub, fill=accent_color, anchor="mm")
+    draw.text((350, 225), f"성향 코드: {user_code}   |   매칭률: {match_score}%", font=font_body, fill="#475467", anchor="mm")
+    draw.text((350, 265), f"\"{job_info['summary']}\"", font=font_small, fill="#667085", anchor="mm")
+
+    # 2. DNA 카드
+    draw.rounded_rectangle([30, 330, 670, 420], radius=12, fill="#FFFFFF", outline="#E4E7EC", width=1)
+    draw.rectangle([30, 330, 36, 420], fill=accent_color)
+    draw.text((50, 350), "MY TRADE DNA", font=font_small, fill="#667085")
+    draw.text((50, 375), job_info["traits"], font=font_body, fill="#172033")
+
+    # 3. 4대 축 분석 카드
+    draw.rounded_rectangle([30, 440, 670, 840], radius=18, fill="#FFFFFF", outline="#E4E7EC", width=2)
+    draw.text((50, 465), "나의 무역 성향 4대 축 분석", font=font_sub, fill="#172033")
+
+    axes = [
+        ("Front", f_pct, "Back", b_pct, 520),
+        ("Action", a_pct, "Data", d_pct, 600),
+        ("Compliance", c_pct, "Risk", r_pct, 680),
+        ("Macro", m_pct, "Micro", s_pct, 760)
+    ]
+
+    for left_label, left_v, right_label, right_v, y in axes:
+        draw.text((50, y), f"{left_label} {left_v}%", font=font_body, fill="#344054")
+        draw.text((650, y), f"{right_v}% {right_label}", font=font_body, fill="#344054", anchor="ra")
+
+        bar_y = y + 25
+        draw.rounded_rectangle([50, bar_y, 650, bar_y + 12], radius=6, fill="#EAECF0")
+        split_x = 50 + int((left_v / 100) * 600)
+        if split_x > 50:
+            draw.rounded_rectangle([50, bar_y, split_x, bar_y + 12], radius=6, fill="#5A7394")
+        if split_x < 650:
+            draw.rounded_rectangle([split_x, bar_y, 650, bar_y + 12], radius=6, fill="#B8C6D6")
+
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    buf.seek(0)
+    return buf.getvalue()
+
+# -------------------------------------------------------------
+# 6. 세션 상태
 # -------------------------------------------------------------
 if "current_idx" not in st.session_state:
     st.session_state.current_idx = 0
@@ -606,7 +681,7 @@ if "answers" not in st.session_state:
     st.session_state.answers = {}
 
 # -------------------------------------------------------------
-# 6. 공통 헤더
+# 7. 공통 헤더
 # -------------------------------------------------------------
 st.markdown(
     '<div class="main-title">🚢 무역 직무 MBTI 진단 테스트</div>',
@@ -619,7 +694,7 @@ st.markdown(
 )
 
 # =============================================================
-# 7. INTRO
+# 8. INTRO
 # =============================================================
 if st.session_state.current_idx == 0:
 
@@ -712,7 +787,7 @@ if st.session_state.current_idx == 0:
         st.rerun()
 
 # =============================================================
-# 8. QUESTION
+# 9. QUESTION
 # =============================================================
 elif 1 <= st.session_state.current_idx <= 24:
 
@@ -776,7 +851,7 @@ elif 1 <= st.session_state.current_idx <= 24:
         st.rerun()
 
 # =============================================================
-# 9. RESULT
+# 10. RESULT
 # =============================================================
 elif st.session_state.current_idx == 25:
 
@@ -837,9 +912,6 @@ elif st.session_state.current_idx == 25:
     m_pct = int((counts["M"] / 6) * 100)
     s_pct = 100 - m_pct
 
-    # 결과지 이미지 캡처 영역 시작
-    st.markdown('<div id="trade-mbti-result-card">', unsafe_allow_html=True)
-
     # ---------------------------------------------------------
     # RESULT HERO (캐릭터 카드)
     # ---------------------------------------------------------
@@ -859,57 +931,21 @@ elif st.session_state.current_idx == 25:
 </div>"""
     st.markdown(hero_html, unsafe_allow_html=True)
 
-    # 결과지 이미지 저장 버튼
-    components.html("""
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-      .save-btn {
-        width: 100%;
-        background-color: #243B5A;
-        color: #ffffff;
-        border: none;
-        border-radius: 12px;
-        padding: 13px 20px;
-        font-size: 0.98rem;
-        font-weight: 800;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(36, 59, 90, 0.16);
-        transition: all 0.18s ease;
-        font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-      }
-      .save-btn:hover {
-        background-color: #1A2C44;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(36, 59, 90, 0.22);
-      }
-    </style>
-    <button class="save-btn" onclick="downloadResultImage()">
-      🖼️ 결과지 이미지로 저장
-    </button>
-    <script>
-      function downloadResultImage() {
-        const target = window.parent.document.getElementById('trade-mbti-result-card');
-        if (!target) {
-          alert('결과 영역을 찾을 수 없습니다.');
-          return;
-        }
-        window.parent.html2canvas(target, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#F6F7F9'
-        }).then(function(canvas) {
-          const link = document.createElement('a');
-          link.download = '무역직무_MBTI_진단결과.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        });
-      }
-    </script>
-    """, height=62)
+    # ---------------------------------------------------------
+    # 결과지 이미지 생성 및 다운로드 버튼 (Pillow 기반 100% 동작)
+    # ---------------------------------------------------------
+    img_bytes = generate_result_image(
+        best_job, user_code, job_scores[best_job_code],
+        f_pct, b_pct, a_pct, d_pct, c_pct, r_pct, m_pct, s_pct
+    )
+
+    st.download_button(
+        label="🖼️ 결과지 이미지로 저장",
+        data=img_bytes,
+        file_name=f"무역직무_MBTI_{best_job['char_name']}.png",
+        mime="image/png",
+        use_container_width=True
+    )
 
     st.write("")
 
@@ -1101,9 +1137,6 @@ elif st.session_state.current_idx == 25:
 </div>"""
 
     st.markdown(detail_card_html, unsafe_allow_html=True)
-
-    # 결과지 이미지 캡처 영역 종료
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================
     # 전체 순위
