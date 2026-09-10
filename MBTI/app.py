@@ -133,7 +133,7 @@ p, span, div, label {
     margin-bottom: 4px;
 }
 
-/* 일반 버튼 기본 스타일 */
+/* 일반 버튼 및 다운로드 버튼 공통 스타일 */
 .stButton > button, .stDownloadButton > button {
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -932,7 +932,7 @@ elif st.session_state.current_idx == 25:
     st.markdown(hero_html, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
-    # 결과지 이미지 생성 및 다운로드 버튼 (Pillow 기반 100% 동작)
+    # 결과지 이미지 생성 및 다운로드 버튼 (Pillow 기반)
     # ---------------------------------------------------------
     img_bytes = generate_result_image(
         best_job, user_code, job_scores[best_job_code],
