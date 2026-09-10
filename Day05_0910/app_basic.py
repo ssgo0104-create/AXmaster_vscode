@@ -15,7 +15,7 @@ WEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")
 
 # ==============================================================================
-# 2. 스타일링 (선택창 강조 및 기본 UI)
+# 2. 기본 세팅 및 레이아웃 CSS
 # ==============================================================================
 st.set_page_config(page_title="Global Weather & Forex", page_icon="✈️", layout="wide")
 
@@ -27,7 +27,7 @@ st.markdown("""
     }
     
     .main-header {
-        font-size: 2rem;
+        font-size: 2.1rem;
         font-weight: 800;
         color: #0f172a;
         margin-bottom: 0.2rem;
@@ -38,20 +38,12 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* 위치 선택 영역 강조 컨테이너 */
-    .location-selector-box {
-        background: #ffffff;
-        border: 2px solid #3b82f6;
-        border-radius: 16px;
-        padding: 18px 20px;
-        box-shadow: 0 6px 15px -3px rgba(59, 130, 246, 0.15);
-        margin-bottom: 24px;
-    }
+    /* 위치 선택 영역 강조 */
     .selector-title {
-        font-size: 0.95rem;
+        font-size: 1rem;
         font-weight: 800;
-        color: #1e40af;
-        margin-bottom: 10px;
+        color: #1e3a8a;
+        margin-bottom: 8px;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -84,7 +76,7 @@ st.markdown("""
         letter-spacing: 0.05em;
     }
     .outfit-desc {
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-weight: 600;
         color: #1e293b;
         margin-top: 2px;
@@ -99,12 +91,12 @@ st.markdown("""
         box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.03);
     }
     .fx-currency {
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 700;
         color: #64748b;
     }
     .fx-rate {
-        font-size: 1.45rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: #0f172a;
         margin-top: 4px;
@@ -113,51 +105,114 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-header">✈️ Global Travel Dashboard</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">실시간 도시 기상 맞춤 테마와 옷차림 정보, 실시간 환율을 제공합니다.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">실시간 기상 상태에 따른 컬러 테마와 옷차림 추천, 실시간 통화 환율을 제공합니다.</div>', unsafe_allow_html=True)
 
 if not WEATHER_API_KEY or not EXCHANGE_API_KEY:
     st.error(".env 파일에서 API 키 설정을 확인하세요.")
     st.stop()
 
 # ==============================================================================
-# 3. 날씨별 동적 테마(배경색 & 이모지) 및 옷차림 로직
+# 3. 날씨별 동적 테마 (맑음: 밝은 화사한 톤 / 흐림: 어두운 톤)
 # ==============================================================================
 def get_weather_theme(weather_main, icon_code):
     weather_main = weather_main.lower()
     is_night = icon_code.endswith('n')
     
-    # 맑음
+    # 1) 맑은 날: 밝고 화사한 웜 옐로우/오렌지 베이지톤 (낮) / 밤은 세련된 딥 네이비
     if "clear" in weather_main:
         if is_night:
-            return "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)", "🌙", "#c7d2fe", "#a5b4fc"
-        return "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)", "☀️", "#fef3c7", "#fed7aa"
-    # 구름/흐림
+            # 밤 맑음: 어두운 인디고
+            return {
+                "bg": "linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)",
+                "emoji": "🌙",
+                "title_color": "#e0e7ff",
+                "temp_color": "#ffffff",
+                "desc_color": "#c7d2fe",
+                "chip_bg": "rgba(255, 255, 255, 0.15)",
+                "chip_text": "#ffffff"
+            }
+        else:
+            # 낮 맑음: 화사하고 밝은 샴페인 선셋톤
+            return {
+                "bg": "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)",
+                "emoji": "☀️",
+                "title_color": "#9a3412",
+                "temp_color": "#7c2d12",
+                "desc_color": "#c2410c",
+                "chip_bg": "rgba(255, 255, 255, 0.65)",
+                "chip_text": "#7c2d12"
+            }
+
+    # 2) 흐림/구름: 확실하게 어둡고 차분한 다크 슬레이트 톤
     elif "cloud" in weather_main:
-        return "linear-gradient(135deg, #475569 0%, #334155 100%)", "☁️", "#cbd5e1", "#94a3b8"
-    # 비
+        return {
+            "bg": "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
+            "emoji": "☁️",
+            "title_color": "#cbd5e1",
+            "temp_color": "#f8fafc",
+            "desc_color": "#94a3b8",
+            "chip_bg": "rgba(255, 255, 255, 0.12)",
+            "chip_text": "#f1f5f9"
+        }
+
+    # 3) 비/소나기: 톤다운된 차분한 딥 블루
     elif any(k in weather_main for k in ["rain", "drizzle"]):
-        return "linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%)", "🌧️", "#bfdbfe", "#93c5fd"
-    # 천둥번개
-    elif "thunderstorm" in weather_main:
-        return "linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)", "⚡", "#e0e7ff", "#c7d2fe"
-    # 눈
+        return {
+            "bg": "linear-gradient(135deg, #1e3a8a 0%, #172554 100%)",
+            "emoji": "🌧️",
+            "title_color": "#bfdbfe",
+            "temp_color": "#ffffff",
+            "desc_color": "#93c5fd",
+            "chip_bg": "rgba(255, 255, 255, 0.15)",
+            "chip_text": "#ffffff"
+        }
+
+    # 4) 눈: 맑고 뽀얀 화이트-스카이블루 밝은 톤
     elif "snow" in weather_main:
-        return "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)", "❄️", "#e0f2fe", "#bae6fd"
-    # 안개/먼지 등
+        return {
+            "bg": "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
+            "emoji": "❄️",
+            "title_color": "#0369a1",
+            "temp_color": "#0c4a6e",
+            "desc_color": "#0284c7",
+            "chip_bg": "rgba(255, 255, 255, 0.7)",
+            "chip_text": "#0c4a6e"
+        }
+
+    # 5) 천둥번개 / 기타 안개
+    elif "thunderstorm" in weather_main:
+        return {
+            "bg": "linear-gradient(135deg, #312e81 0%, #0f172a 100%)",
+            "emoji": "⚡",
+            "title_color": "#e0e7ff",
+            "temp_color": "#ffffff",
+            "desc_color": "#c7d2fe",
+            "chip_bg": "rgba(255, 255, 255, 0.15)",
+            "chip_text": "#ffffff"
+        }
     else:
-        return "linear-gradient(135deg, #64748b 0%, #475569 100%)", "🌫️", "#e2e8f0", "#cbd5e1"
+        # 안개 등
+        return {
+            "bg": "linear-gradient(135deg, #475569 0%, #334155 100%)",
+            "emoji": "🌫️",
+            "title_color": "#e2e8f0",
+            "temp_color": "#ffffff",
+            "desc_color": "#cbd5e1",
+            "chip_bg": "rgba(255, 255, 255, 0.12)",
+            "chip_text": "#f8fafc"
+        }
 
 def get_outfit_recommendation(temp, weather_desc):
     rain_or_snow = any(k in weather_desc for k in ["비", "소나기", "눈", "천둥"])
     
     if temp >= 28:
-        outfit, icon = "민소매, 얇은 린넨 셔츠, 반바지, 선글라스", "🕶️"
+        outfit, icon = "민소매, 얇은 린넨 셔츠, 반바지, 자외선 차단 선글라스", "🕶️"
     elif 23 <= temp < 28:
-        outfit, icon = "반팔 티셔츠, 얇은 셔츠, 슬랙스 또는 면바지", "👕"
+        outfit, icon = "반팔 티셔츠, 얇은 셔츠, 슬랙스 또는 통풍 면바지", "👕"
     elif 20 <= temp < 23:
         outfit, icon = "긴팔 티셔츠, 가벼운 가디건, 셔츠, 청바지", "👔"
     elif 17 <= temp < 20:
-        outfit, icon = "니트, 맨투맨, 가디건, 바람막이, 슬랙스", "🧶"
+        outfit, icon = "니트, 얇은 맨투맨, 가디건, 바람막이, 슬랙스", "🧶"
     elif 12 <= temp < 17:
         outfit, icon = "자켓, 야상, 셔츠 레이어드, 도톰한 맨투맨", "🧥"
     elif 9 <= temp < 12:
@@ -165,15 +220,15 @@ def get_outfit_recommendation(temp, weather_desc):
     elif 5 <= temp < 9:
         outfit, icon = "울 코트, 히트텍, 도톰한 니트, 가죽 자켓, 머플러", "🧤"
     else:
-        outfit, icon = "패딩, 두꺼운 울 코트, 기모 제품, 목도리, 장갑 필수", "❄️"
+        outfit, icon = "패딩, 두꺼운 울 코트, 기모 의류, 목도리, 장갑 필수", "❄️"
         
     if rain_or_snow:
-        outfit += " (⚠️ 우산 챙기세요)"
+        outfit += " (⚠️ 우산 필수 지참)"
         
     return icon, outfit
 
 # ==============================================================================
-# 4. 강조된 위치 선택창 (드롭다운 + 직접 검색)
+# 4. 상단 도시 선택 드롭다운 + 검색창
 # ==============================================================================
 st.markdown('<div class="selector-title">📍 여행지 및 도시 선택</div>', unsafe_allow_html=True)
 
@@ -201,7 +256,7 @@ if selected_option == "🔍 직접 도시 검색하기":
         target_city = custom_input.strip()
 
 # ==============================================================================
-# 5. 동적 날씨 카드 렌더링
+# 5. 동적 컬러 날씨 카드 & 옷차림
 # ==============================================================================
 if target_city:
     weather_url = "https://api.openweathermap.org/data/2.5/weather"
@@ -227,37 +282,37 @@ if target_city:
             country = w_data["sys"]["country"]
             icon_code = w_data["weather"][0]["icon"]
 
-            # 날씨 상태 기반 테마(배경 그라디언트, 이모지, 폰트 색) 가져오기
-            card_bg, weather_emoji, text_sub_color, chip_color = get_weather_theme(main_state, icon_code)
+            # 날씨 상태별 색상 및 이모지 가져오기
+            theme = get_weather_theme(main_state, icon_code)
             outfit_icon, recommended_outfit = get_outfit_recommendation(temp, desc)
 
-            # 동적 색상과 이모지가 적용된 메인 날씨 카드
+            # 날씨 카드 (밝은 날은 밝게, 흐린 날은 어둡게 자동 렌더링)
             st.markdown(f"""
-            <div style="background: {card_bg}; border-radius: 20px; padding: 24px 28px; color: white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.18); margin-top: 10px; margin-bottom: 18px;">
+            <div style="background: {theme['bg']}; border-radius: 20px; padding: 24px 28px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12); margin-top: 10px; margin-bottom: 18px; border: 1px solid rgba(0,0,0,0.04);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: {text_sub_color};">
-                            {weather_emoji} {city_name}, {country}
+                        <div style="font-size: 1.25rem; font-weight: 700; color: {theme['title_color']};">
+                            {theme['emoji']} {city_name}, {country}
                         </div>
-                        <div style="font-size: 3.4rem; font-weight: 800; line-height: 1.05; margin: 4px 0;">
+                        <div style="font-size: 3.4rem; font-weight: 800; line-height: 1.05; margin: 4px 0; color: {theme['temp_color']};">
                             {temp}°C
                         </div>
-                        <div style="font-size: 1rem; color: {text_sub_color};">
+                        <div style="font-size: 1rem; font-weight: 600; color: {theme['desc_color']};">
                             {desc} · 체감 {feels_like}°C
                         </div>
                     </div>
                     <div>
-                        <img src="https://openweathermap.org/img/wn/{icon_code}@4x.png" width="115" style="filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25));">
+                        <img src="https://openweathermap.org/img/wn/{icon_code}@4x.png" width="115" style="filter: drop-shadow(0 4px 10px rgba(0,0,0,0.18));">
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 16px;">
-                    <div style="background: rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600;">💧 습도 {humidity}%</div>
-                    <div style="background: rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 6px 14px; font-size: 0.85rem; font-weight: 600;">💨 풍속 {wind} m/s</div>
+                    <div style="background: {theme['chip_bg']}; color: {theme['chip_text']}; border-radius: 10px; padding: 6px 14px; font-size: 0.85rem; font-weight: 700;">💧 습도 {humidity}%</div>
+                    <div style="background: {theme['chip_bg']}; color: {theme['chip_text']}; border-radius: 10px; padding: 6px 14px; font-size: 0.85rem; font-weight: 700;">💨 풍속 {wind} m/s</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-            # 날씨 맞춤 옷차림 카드
+            # 옷차림 카드
             st.markdown(f"""
             <div class="outfit-card">
                 <div class="outfit-icon">{outfit_icon}</div>
