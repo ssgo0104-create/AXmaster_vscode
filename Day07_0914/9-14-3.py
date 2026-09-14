@@ -720,4 +720,4 @@ with col_right:
                 st.button(toggle_btn_label, on_click=toggle_show_places, use_container_width=True)
 
         elif current_search.strip():
-            st.info("검색된 장소가 없습니다. 다른 키워드로 검색해 보세요.")
+            st.info("검색된 장소가 없습니다. 다른 키워드로 검색해 보세요.")#여행
